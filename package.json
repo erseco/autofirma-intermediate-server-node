@@ -1,6 +1,6 @@
 {
   "name": "@erseco/autofirma-intermediate-server",
-  "version": "0.1.0",
+  "version": "1.9.3",
   "description": "Servidor intermedio de AutoScript/AutoFirma (storage/retrieve) en TypeScript, independiente de frameworks",
   "keywords": [
     "autofirma",

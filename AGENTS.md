@@ -38,7 +38,11 @@ error HTTP. Prueba límites de tamaño, identificadores inválidos y consumo ún
 
 ## Versiones y publicación
 
-Versionado semántico propio, independiente del servidor PHP y del cliente.
-`publish.yml` publica un tag `v*` bajo `latest` y cada push a `main` bajo
-`canary`. Npm no admite reutilizar un número aunque se despublique. No añadas
+Mayor y menor acompañan a la línea de AutoFirma de `@erseco/autofirma-client`,
+y los números coinciden con los del servidor PHP para el mismo comportamiento;
+el parche es propio y solo crece. `publish.yml` publica un tag `v*` bajo
+`latest` y cada push a `main` bajo `canary`.
+
+Cada tag lleva **siempre** su GitHub Release con el tarball publicado. Si el
+workflow falla antes de crearla, créala a mano con `gh release create`. Npm no admite reutilizar un número aunque se despublique. No añadas
 tokens npm al repositorio.
