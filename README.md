@@ -1,6 +1,7 @@
 # AutoFirma Intermediate Server para Node
 
 [![CI](https://github.com/erseco/autofirma-intermediate-server-node/actions/workflows/ci.yml/badge.svg)](https://github.com/erseco/autofirma-intermediate-server-node/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/erseco/autofirma-intermediate-server-node/graph/badge.svg)](https://codecov.io/gh/erseco/autofirma-intermediate-server-node)
 [![npm](https://img.shields.io/npm/v/@erseco/autofirma-intermediate-server.svg)](https://www.npmjs.com/package/@erseco/autofirma-intermediate-server)
 [![License](https://img.shields.io/github/license/erseco/autofirma-intermediate-server-node)](LICENSE)
 
