@@ -85,12 +85,25 @@ jobs:
           # `registry=https://registry.npmjs.org///npm.pkg…`, dejando a npm sin
           # registro válido y sin credencial.
           printf '\n//npm.pkg.github.com/:_authToken=%s\n' "${NODE_AUTH_TOKEN}" >> "${NPM_CONFIG_USERCONFIG:-${HOME}/.npmrc}"
-          npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}" --registry=https://npm.pkg.github.com
+          # Idempotente: si un intento anterior ya la publicó aquí, se salta y el
+          # workflow puede repetirse hasta completar npm y la release.
+          VERSION="$(tar -xzOf ./artifacts/*.tgz package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")"
+          if npm view "$(node -p "require('./package.json').name")@${VERSION}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "Ya publicada en GitHub Packages"
+          else
+            npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}" --registry=https://npm.pkg.github.com
+          fi
 
       # npm se autentica por OIDC: este fichero debe estar dado de alta como
       # publicador de confianza del paquete, con el entorno `npm`.
       - name: Publicar en npm
-        run: npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}"
+        run: |
+          VERSION="$(tar -xzOf ./artifacts/*.tgz package/package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")"
+          if npm view "$(node -p "require('./package.json').name")@${VERSION}" version >/dev/null 2>&1; then
+            echo "Ya publicada en npm"
+          else
+            npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}"
+          fi
 
       - name: Crear GitHub Release
         if: github.ref_type == 'tag'
