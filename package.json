@@ -1,0 +1,72 @@
+{
+  "name": "@erseco/autofirma-intermediate-server",
+  "version": "0.1.0",
+  "description": "Servidor intermedio de AutoScript/AutoFirma (storage/retrieve) en TypeScript, independiente de frameworks",
+  "keywords": [
+    "autofirma",
+    "autoscript",
+    "firma-electronica",
+    "servidor-intermedio"
+  ],
+  "license": "GPL-2.0-or-later",
+  "author": "Ernesto Serrano",
+  "homepage": "https://github.com/erseco/autofirma-intermediate-server-node#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erseco/autofirma-intermediate-server-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/erseco/autofirma-intermediate-server-node/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./fs": {
+      "types": "./dist/fs.d.ts",
+      "import": "./dist/fs.js",
+      "require": "./dist/fs.cjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "check": "npm run format:check && npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepack": "npm run build",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "prettier": "^3.9.10",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

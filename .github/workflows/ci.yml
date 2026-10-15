@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Codecov se autentica con OIDC en lugar de con un token guardado como
+      # secreto. Sin este permiso no puede emitirse el identificador.
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: make install
+      - run: make lint
+      - run: make test
+      # `make test` ya ejecuta Vitest con cobertura y deja el informe en
+      # `coverage/lcov.info`. No depende de la versión de Node, así que se
+      # publica una sola vez en lugar de una por cada entrada de la matriz.
+      - name: Publicar en Codecov
+        if: matrix.node == 24
+        uses: codecov/codecov-action@v7
+        with:
+          use_oidc: true
+          files: ./coverage/lcov.info
+          flags: javascript
+      - run: make build

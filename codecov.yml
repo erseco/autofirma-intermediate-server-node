@@ -1,0 +1,16 @@
+# Configuración de Codecov.
+#
+# Los estados son informativos: comentan la cobertura en cada pull request pero
+# no lo marcan como fallido. Buena parte del código solo puede ejercitarse con
+# el entorno completo cargado, de modo que un umbral que bloquee el trabajo
+# mediría lo que se puede probar sin entorno, no lo que está bien hecho.
+#
+# Para que pasen a bloquear, poner `informational: false`.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true

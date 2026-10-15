@@ -1,0 +1,104 @@
+name: Publish
+
+# Un único fichero para las dos publicaciones, y no por gusto: npm admite un
+# solo publicador de confianza por paquete, así que si release y canary
+# viviesen en ficheros distintos uno de los dos fallaría siempre al publicar.
+#
+# Un tag `v*` publica bajo `latest` y crea la release; un push a `main` publica
+# una preversión bajo `canary`.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Decidir qué se publica
+        id: destino
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "dist_tag=latest" >> "${GITHUB_OUTPUT}"
+          else
+            echo "dist_tag=canary" >> "${GITHUB_OUTPUT}"
+          fi
+
+      # En una release, el tag debe ser exactamente la versión del paquete:
+      # publicar un tarball que no corresponde al tag anunciado solo se
+      # descubre cuando ya está publicado.
+      - name: Verificar versión
+        if: github.ref_type == 'tag'
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+
+      - run: make install
+      - run: make check
+
+      # La base es el patch siguiente al de package.json, no el actual: una
+      # preversión ordena por debajo de su versión, así que ocuparía el hueco de
+      # la que está por salir. Con el patch siguiente ordena por encima de lo ya
+      # publicado y por debajo de esa futura versión, sin reservar su número.
+      - name: Calcular y fijar la versión canary
+        if: github.ref_type != 'tag'
+        run: |
+          BASE="$(node -p "const [major, minor, patch] = require('./package.json').version.split('.'); [major, minor, Number(patch) + 1].join('.')")"
+          VERSION="${BASE}-canary.$(date -u +%Y%m%d%H%M%S).${GITHUB_SHA::7}"
+          echo "CANARY_VERSION=${VERSION}" >> "${GITHUB_ENV}"
+          npm version "${VERSION}" --no-git-tag-version
+
+      - run: mkdir artifacts
+      - run: npm pack --pack-destination artifacts
+
+      # En los dos registros se publica el mismo tarball ya verificado, no uno
+      # nuevo: repetir el empaquetado daría un fichero distinto del comprobado.
+      # La ruta lleva `./` a propósito: sin él, npm interpreta `artifacts/x.tgz`
+      # como el atajo de GitHub `usuario/repo` e intenta clonarlo por git.
+      #
+      # GitHub Packages va primero porque se autentica con el token del propio
+      # workflow y no depende de nada configurado fuera.
+      - name: Publicar en GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          # setup-node apunta npm a un .npmrc temporal vía NPM_CONFIG_USERCONFIG,
+          # así que escribir en ~/.npmrc no tendría ningún efecto. El salto de
+          # línea inicial tampoco es cosmético: ese fichero no termina en salto,
+          # y un append pegado a la última línea produce
+          # `registry=https://registry.npmjs.org///npm.pkg…`, dejando a npm sin
+          # registro válido y sin credencial.
+          printf '\n//npm.pkg.github.com/:_authToken=%s\n' "${NODE_AUTH_TOKEN}" >> "${NPM_CONFIG_USERCONFIG:-${HOME}/.npmrc}"
+          npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}" --registry=https://npm.pkg.github.com
+
+      # npm se autentica por OIDC: este fichero debe estar dado de alta como
+      # publicador de confianza del paquete, con el entorno `npm`.
+      - name: Publicar en npm
+        run: npm publish ./artifacts/*.tgz --tag "${{ steps.destino.outputs.dist_tag }}"
+
+      - name: Crear GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.tgz --generate-notes
+
+      - name: Resumen
+        run: |
+          VERSION="${CANARY_VERSION:-$(node -p "require('./package.json').version")}"
+          echo "Publicada ${VERSION} bajo el dist-tag ${{ steps.destino.outputs.dist_tag }}" >> "${GITHUB_STEP_SUMMARY}"

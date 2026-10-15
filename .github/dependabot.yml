@@ -1,0 +1,23 @@
+# Actualizaciones automáticas de dependencias.
+# Referencia: https://docs.github.com/code-security/dependabot
+version: 2
+
+updates:
+  # Actions usadas por los workflows de CI, documentación y release.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Herramientas de desarrollo: TypeScript, tsup, Vitest y Prettier.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-development:
+        dependency-type: development
